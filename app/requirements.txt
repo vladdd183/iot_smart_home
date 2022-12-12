@@ -1,0 +1,6 @@
+flask
+flask-migrate
+psycopg2-binary
+flask-sqlalchemy==2.5.1
+paho-mqtt
+
