@@ -3,14 +3,32 @@ from models.Device import Device
 import controllers.iot as iot
 from threading import Thread
 import paho.mqtt.publish as publish
-
-from flask_sqlalchemy import SQLAlchemy
 import settings
-HOST = settings.MQTT_HOST
+from flask_sqlalchemy import SQLAlchemy
+
+
+db = SQLAlchemy()
+
+
+
 
 def dev_init(dev, name, topic):
-    Thread(target=dev, args=(name, topic,)).start()
-db = SQLAlchemy()
+    match dev:
+        case 'heater':
+            device = iot.Heater
+        case 'tv':
+            device = iot.TV
+        case 'lamp':
+            device = iot.Light
+        case _:
+            device = iot.Device
+
+    dev = Device(name, topic, dev)
+    device = device(name, topic)
+    db.session.add(dev)
+    db.session.commit()
+    
+
 
 def index():
     devices = Device.query.all()
@@ -22,29 +40,12 @@ def store():
     topic = request.form['topic'] or None
     dev_type = request.form['dev_type'] or None
     if all([name, topic, dev_type]):
-        match dev_type:
-            case 'heater':
-                device = iot.Heater
-                dev_init(device,name,topic)
-            case 'tv':
-                device = iot.TV
-                dev_init(iot.TV,name,topic)
-            case 'light':
-                device = iot.Light
-                dev_init(iot.Light,name,topic)
-            case _:
-                device = iot.Device
-                dev_init(iot.Device,name, topic)
-        db.session.add(device)
-        db.session.commit()
+        dev_init(dev_type, name, topic)
         return 'Device created'
     return 'error'
 
 def cmd():
-    print('1'*100)
-    print(request.form)
-
     cmd = request.form['cmd']
     topic = request.form['topic']
-    publish.single(topic, cmd, hostname=HOST)    
-    return 'ok' 
+    publish.single(topic=topic+'/cmd', payload=cmd, hostname=settings.MQTT_HOST, port=settings.MQTT_PORT)
+    return 'ok'

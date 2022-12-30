@@ -18,8 +18,8 @@ migrate = Migrate(app, db)
 # db.drop_all()
 # db.create_all()
 # db.session.commit()
-app.register_blueprint(device_bp, url_prefix='/devices')
 app.register_blueprint(cmd_bp, url_prefix='/cmd')
+app.register_blueprint(device_bp, url_prefix='/devices')
 
 @app.route('/')
 def index():
